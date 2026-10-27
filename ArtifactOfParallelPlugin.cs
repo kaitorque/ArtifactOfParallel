@@ -2,6 +2,8 @@ using BepInEx;
 using BepInEx.Logging;
 using R2API.Utils;
 
+[assembly: HG.Reflection.SearchableAttribute.OptIn]
+
 namespace ArtifactOfParallel
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
@@ -21,6 +23,8 @@ namespace ArtifactOfParallel
             Log = Logger;
             ModConfig.Init(Config);
             ParallelArtifact.Register();
+            PrivatePrefabs.Init();
+            InteractionHooks.Init();
         }
     }
 }

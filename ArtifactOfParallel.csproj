@@ -25,6 +25,8 @@
     <Reference Include="R2API.ContentManagement" HintPath="$(Profile)\plugins\RiskofThunder-R2API_ContentManagement\R2API.ContentManagement\R2API.ContentManagement.dll" Private="false" />
     <Reference Include="R2API.Language" HintPath="$(Profile)\plugins\RiskofThunder-R2API_Language\R2API.Language\R2API.Language.dll" Private="false" />
     <Reference Include="RoR2" HintPath="$(GameManaged)\RoR2.dll" Private="false" />
+    <Reference Include="HGCSharpUtils" HintPath="$(GameManaged)\HGCSharpUtils.dll" Private="false" />
+    <Reference Include="UnityEngine.PhysicsModule" HintPath="$(GameManaged)\UnityEngine.PhysicsModule.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(GameManaged)\UnityEngine.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(GameManaged)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(GameManaged)\UnityEngine.ImageConversionModule.dll" Private="false" />
