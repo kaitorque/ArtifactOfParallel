@@ -20,6 +20,7 @@ namespace ArtifactOfParallel
         public static void Init()
         {
             On.RoR2.PurchaseInteraction.GetInteractability += PurchaseInteraction_GetInteractability;
+            On.RoR2.PurchaseInteraction.OnInteractionBegin += PurchaseInteraction_OnInteractionBegin;
             On.RoR2.DrifterBagController.AssignPassenger += DrifterBagController_AssignPassenger;
             On.RoR2.Projectile.TinkerProjectile.TransmuteTargetObject += TinkerProjectile_TransmuteTargetObject;
             On.RoR2.UI.PingIndicator.RebuildPing += PingIndicator_RebuildPing;
@@ -35,11 +36,21 @@ namespace ArtifactOfParallel
             {
                 if (!owner.CanBeUsedBy(activator))
                 {
+                    if (DebugLog.Enabled)
+                    {
+                        DebugLog.Once($"deny:{self.GetInstanceID()}:{ActorName(activator)}",
+                            $"Interact: refused {ActorName(activator)} on {self.name} (owner {owner.OwnerName()})");
+                    }
                     return Interactability.Disabled;
                 }
                 // The owner's Remote Operation drone may open their own private objects.
                 if (owner.IsPrivate && activator && activator.isRemoteOp && !self.allowRemoteOpInteraction)
                 {
+                    if (DebugLog.Enabled)
+                    {
+                        DebugLog.Once($"remoteop:{self.GetInstanceID()}",
+                            $"Interact: allowed {ActorName(activator)}'s Remote Operation drone on their own {self.name}");
+                    }
                     self.allowRemoteOpInteraction = true;
                     try
                     {
@@ -54,6 +65,23 @@ namespace ArtifactOfParallel
             return orig(self, activator);
         }
 
+        private static void PurchaseInteraction_OnInteractionBegin(
+            On.RoR2.PurchaseInteraction.orig_OnInteractionBegin orig, PurchaseInteraction self, Interactor activator)
+        {
+            if (DebugLog.Enabled && self.TryGetComponent(out ParallelOwner owner))
+            {
+                DebugLog.Info($"Interact: {ActorName(activator)}{(activator && activator.isRemoteOp ? " (Remote Operation)" : "")} " +
+                    $"used {self.name} at {self.transform.position} (owner {owner.OwnerName()}, {(owner.IsPrivate ? "private" : "shared")})");
+            }
+            orig(self, activator);
+        }
+
+        private static string ActorName(Interactor activator)
+        {
+            NetworkUser user = ParallelOwner.UserOf(activator ? activator.GetComponent<CharacterBody>() : null);
+            return user ? user.userName : activator ? activator.name : "nobody";
+        }
+
         /// <summary>
         /// A ping outlines its target's renderers even when they're hidden, which would show a private object's
         /// shape on the host. Keep the ping marker but drop the outline, like on clients that don't have the object.
@@ -65,6 +93,7 @@ namespace ArtifactOfParallel
             if (owner && owner.IsLocallyHidden && PingTargetRenderers.GetValue(self) is List<Renderer> renderers)
             {
                 renderers.Clear();
+                DebugLog.Info($"Ping: removed the outline from hidden {owner.name} (owner {owner.OwnerName()}); the marker stays");
             }
         }
 
@@ -82,7 +111,15 @@ namespace ArtifactOfParallel
             {
                 return result;
             }
-            return hasDrifterActor ? owner.CanBeUsedBy(drifterActor) : owner.IsVisibleToLocalPlayer();
+            bool allowed = hasDrifterActor ? owner.CanBeUsedBy(drifterActor) : owner.IsVisibleToLocalPlayer();
+            if (!allowed && DebugLog.Enabled)
+            {
+                string actor = hasDrifterActor ? (drifterActor ? drifterActor.userName : "unknown player") : "local player";
+                DebugLog.Once($"drifter:{self.GetInstanceID()}:{actor}:{hasDrifterActor}",
+                    $"Drifter: {self.name} (owner {owner.OwnerName()}) can't be grabbed or Tinkered by {actor}" +
+                    (hasDrifterActor ? " (server check)" : " (targeting on this game)"));
+            }
+            return allowed;
         }
 
         private static void DrifterBagController_AssignPassenger(

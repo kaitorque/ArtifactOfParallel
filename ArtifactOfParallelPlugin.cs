@@ -23,6 +23,7 @@ namespace ArtifactOfParallel
         {
             Log = Logger;
             ModConfig.Init(Config);
+            DebugLog.Init();
             ParallelArtifact.Register();
             PrivatePrefabs.Init();
             InteractionHooks.Init();

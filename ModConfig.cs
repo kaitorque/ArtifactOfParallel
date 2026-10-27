@@ -11,10 +11,7 @@ namespace ArtifactOfParallel
         public static ConfigEntry<bool> PrivateShrineOfChance { get; private set; }
         public static ConfigEntry<bool> PrivateMultishops { get; private set; }
         public static ConfigEntry<bool> PrivateItemBoxes { get; private set; }
-        public static ConfigEntry<bool> PrivatePrinters { get; private set; }
-        public static ConfigEntry<bool> PrivateScrappers { get; private set; }
-        public static ConfigEntry<bool> PrivateDrones { get; private set; }
-        public static ConfigEntry<bool> LogSpawns { get; private set; }
+        public static ConfigEntry<bool> DebugLogging { get; private set; }
 
         public static void Init(ConfigFile config)
         {
@@ -32,15 +29,14 @@ namespace ArtifactOfParallel
                 "Multishop terminals are split between players.");
             PrivateItemBoxes = config.Bind("Private", "ItemBoxes", true,
                 "Rusted Key lockboxes, Encrusted Key caches and Shipping Request Form chests belong to the player whose item spawned them.");
-            PrivatePrinters = config.Bind("Private", "Printers", false,
-                "3D printers are split between players.");
-            PrivateScrappers = config.Bind("Private", "Scrappers", false,
-                "Scrappers are split between players.");
-            PrivateDrones = config.Bind("Private", "Drones", false,
-                "Broken drones and turrets are split between players.");
 
-            LogSpawns = config.Bind("Debug", "LogSpawns", false,
-                "Log each stage's loot budget and who got which private object.");
+            DebugLogging = config.Bind("Debug", "Logging", false,
+                "Log each stage's loot split, ownership changes, and interaction, Drifter, ping and hiding checks. For testing.");
         }
+
+        public static string Summary() =>
+            $"Chests={PrivateChests.Value} EquipmentBarrels={PrivateEquipmentBarrels.Value} LunarPods={PrivateLunarPods.Value} " +
+            $"VoidCradles={PrivateVoidCradles.Value} ShrineOfChance={PrivateShrineOfChance.Value} Multishops={PrivateMultishops.Value} " +
+            $"ItemBoxes={PrivateItemBoxes.Value}";
     }
 }

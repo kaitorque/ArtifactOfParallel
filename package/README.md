@@ -1,15 +1,41 @@
 # ArtifactOfParallel
 
-An artifact that splits a stage's chests, Shrines of Chance, multishops and similar loot between players. Each player only sees and opens their own; anything that drops is shared. The stage's total loot stays the same as a normal multiplayer run.
+An artifact that splits a stage's chests, Shrines of Chance, multishops and similar loot between players. Each player only sees and opens their own; anything that drops out is shared. Added together, everyone's share is about what the stage would have in a normal multiplayer run.
 
-Everyone in the lobby needs this mod, with the same version.
+Everyone in the lobby needs this mod, with the same version. **Early version (0.1): expect rough edges.**
 
-Work in progress: the artifact can be toggled in the lobby but doesn't change anything yet.
+## How it works
+
+- At the start of each stage, the game places loot as usual. The artifact then hands each private object to one player, so everyone gets roughly the same total value. Objects that would push someone well over their share are removed.
+- Stage-placed objects (like the legendary chest on Abyssal Depths) are copied once per player when that fits the budget; otherwise they stay shared.
+- Rusted Key lockboxes, Encrusted Key caches and Shipping Request Form chests belong to the player whose item spawned them.
+- If a player dies or disconnects, their unopened objects become shared until they come back (revive, reconnect, or take over a Remote Operation drone).
+- A Remote Operation drone can open its player's own private objects.
+- Drifter can't grab, throw or Tinker another player's private objects.
+- Printers, scrappers, drones, Void Seed contents and everything else stay shared.
+- With one player the artifact does nothing.
 
 ## Config (`kaitorque.ArtifactOfParallel.cfg`)
+
+The host's settings apply, read at the start of each stage. With [Risk Of Options](https://thunderstore.io/package/Rune580/Risk_Of_Options/) installed, they can be changed in game.
 
 | Section | Setting | Default | Description |
 |---|---|---|---|
 | Private | Chests, EquipmentBarrels, LunarPods, VoidCradles, ShrineOfChance, Multishops | true | Which interactables are split between players |
-| Private | Printers, Scrappers, Drones | false | Same, for interactables that are shared by default |
-| Debug | LogSpawns | false | Log each stage's loot budget and who got which object |
+| Private | ItemBoxes | true | Item-spawned boxes belong to the item's holder |
+| Debug | Logging | false | Log the loot split, ownership changes and interaction checks |
+
+## Console commands (for testing)
+
+- `parallel_test_chests` (host): spawns one small chest per player in front of you.
+- `parallel_debug`: lists private objects on your game and their owners in the BepInEx log.
+
+## Compatibility
+
+- **MapChests:** until MapChests is updated for this mod, the host sees highlights and minimap icons for other players' objects. Mods can use `ArtifactOfParallel.ParallelApi` to check visibility.
+- Players joining mid-stage (DropinMultiplayer) get a share from the next stage.
+
+## Known issues
+
+- On the host, ambient sounds of other players' hidden objects may still play.
+- Pinging where another player's object is shows the ping marker (but not the object).

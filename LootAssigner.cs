@@ -89,11 +89,11 @@ namespace ArtifactOfParallel
                 return;
             }
 
+            DebugLog.Info($"Settings: {ModConfig.Summary()}");
             List<NetworkUser> players = NetworkUser.readOnlyInstancesList.Where(user => user && user.master).ToList();
             int privateValue = objects.Sum(spawned => spawned.value);
             var log = new StringBuilder();
-            log.Append($"Stage {SceneCatalog.mostRecentSceneDef?.cachedName}: players={players.Count} shared={sharedValue} private={privateValue}");
-            if (players.Count <= 1)
+            log.Append($"Stage {SceneCatalog.mostRecentSceneDef?.cachedName}: players={players.Count} shared={sharedValue} private={privateValue}");            if (players.Count <= 1)
             {
                 Log(log.Append(" (not split: fewer than 2 players)"));
                 return;
@@ -156,7 +156,8 @@ namespace ArtifactOfParallel
             for (int i = 0; i < players.Count; i++)
             {
                 log.Append($"\n  {players[i].userName}: value={assigned[i]} objects={counts[i]}");
-            }            log.Append($"\n  removed: value={removedValue} objects={removedCount}");
+            }
+            log.Append($"\n  removed: value={removedValue} objects={removedCount}");
             AssignItemBoxes(log);
             Log(log);
         }
@@ -272,10 +273,7 @@ namespace ArtifactOfParallel
 
         private static void Log(StringBuilder text)
         {
-            if (ModConfig.LogSpawns.Value)
-            {
-                ArtifactOfParallelPlugin.Log.LogInfo(text.ToString());
-            }
+            DebugLog.Info(text.ToString());
         }
     }
 }

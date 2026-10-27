@@ -37,7 +37,8 @@ namespace ArtifactOfParallel
             ModSettingsManager.AddOption(new CheckBoxOption(ModConfig.PrivateShrineOfChance));
             ModSettingsManager.AddOption(new CheckBoxOption(ModConfig.PrivateMultishops));
             ModSettingsManager.AddOption(new CheckBoxOption(ModConfig.PrivateItemBoxes));
-            ModSettingsManager.AddOption(new CheckBoxOption(ModConfig.LogSpawns));
+            ModSettingsManager.AddOption(new CheckBoxOption(ModConfig.DebugLogging));
+            DebugLog.Info("Risk Of Options settings page added.");
         }
     }
 }

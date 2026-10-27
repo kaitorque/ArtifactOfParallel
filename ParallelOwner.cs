@@ -164,16 +164,21 @@ namespace ArtifactOfParallel
             return false;
         }
 
-        public string Describe()
+        public string OwnerName()
         {
-            string ownerName = "none";
             foreach (NetworkUser user in NetworkUser.readOnlyInstancesList)
             {
                 if (IsOwnedBy(user))
                 {
-                    ownerName = user.userName;
+                    return user.userName;
                 }
             }
+            return hasOwner || ownerNetId != NetworkInstanceId.Invalid ? "absent player" : "none";
+        }
+
+        public string Describe()
+        {
+            string ownerName = OwnerName();
             int visibleRenderers = 0;
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
             {
@@ -245,6 +250,10 @@ namespace ArtifactOfParallel
                 return;
             }
             locallyHidden = hide;
+            if (DebugLog.Enabled)
+            {
+                DebugLog.Info($"Visibility: {name} (owner {OwnerName()}) is now {(hide ? "hidden" : "visible")} here");
+            }
             if (hide)
             {
                 Hide();
@@ -300,11 +309,13 @@ namespace ArtifactOfParallel
             }
             // Drifter's grab and throw (SpecialObjectAttributes) switch renderers, colliders and behaviours like the
             // price hologram back on, so keep everything hidden applied every frame.
+            int reapplied = 0;
             foreach (Renderer renderer in hiddenRenderers)
             {
                 if (renderer && !renderer.forceRenderingOff)
                 {
                     renderer.forceRenderingOff = true;
+                    reapplied++;
                 }
             }
             foreach (Collider collider in hiddenColliders)
@@ -312,6 +323,7 @@ namespace ArtifactOfParallel
                 if (collider && collider.enabled)
                 {
                     collider.enabled = false;
+                    reapplied++;
                 }
             }
             foreach (Behaviour behaviour in hiddenBehaviours)
@@ -319,6 +331,7 @@ namespace ArtifactOfParallel
                 if (behaviour && behaviour.enabled)
                 {
                     behaviour.enabled = false;
+                    reapplied++;
                     if (behaviour is HologramProjector projector && projector.hologramContentInstance)
                     {
                         Destroy(projector.hologramContentInstance);
@@ -326,17 +339,24 @@ namespace ArtifactOfParallel
                     }
                 }
             }
+            if (reapplied > 0 && DebugLog.Enabled)
+            {
+                DebugLog.Once("rehide:" + GetInstanceID(),
+                    $"Hiding: {name} (owner {OwnerName()}) had {reapplied} hidden parts switched back on (e.g. Drifter grab or throw); hid them again.");
+            }
         }
 
         // Renderers are hidden with forceRenderingOff because DistanceLOD toggles Renderer.enabled on chests.
         // Safe to call repeatedly; only components not hidden yet are touched.
         private void Hide()
         {
+            int renderers = 0, colliders = 0, lights = 0, holograms = 0;
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(includeInactive: true))
             {
                 if (hiddenRenderers.Add(renderer))
                 {
                     renderer.forceRenderingOff = true;
+                    renderers++;
                 }
             }
             foreach (Collider collider in GetComponentsInChildren<Collider>())
@@ -344,6 +364,7 @@ namespace ArtifactOfParallel
                 if (collider.enabled && hiddenColliders.Add(collider))
                 {
                     collider.enabled = false;
+                    colliders++;
                 }
             }
             foreach (Light light in GetComponentsInChildren<Light>())
@@ -352,6 +373,7 @@ namespace ArtifactOfParallel
                 {
                     hiddenBehaviours.Add(light);
                     light.enabled = false;
+                    lights++;
                 }
             }
             foreach (Highlight highlight in GetComponentsInChildren<Highlight>())
@@ -369,11 +391,16 @@ namespace ArtifactOfParallel
                 {
                     Destroy(projector.hologramContentInstance);
                     projector.hologramContentInstance = null;
+                    holograms++;
                 }
                 if (projector.enabled && hiddenBehaviours.Add(projector))
                 {
                     projector.enabled = false;
                 }
+            }
+            if (renderers + colliders + lights + holograms > 0 && DebugLog.Enabled)
+            {
+                DebugLog.Info($"Hiding: {name} (owner {OwnerName()}) renderers+{renderers} colliders+{colliders} lights+{lights} priceLabels+{holograms}");
             }
         }
 

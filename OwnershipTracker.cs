@@ -111,7 +111,7 @@ namespace ArtifactOfParallel
                 return;
             }
             lastShared[id] = state.shared;
-            if (ModConfig.LogSpawns.Value && (wasShared || state.shared))
+            if (DebugLog.Enabled && (wasShared || state.shared))
             {
                 string name = state.user ? state.user.userName : names.TryGetValue(id, out string known) ? known : "unknown player";
                 string reason = !state.user ? "disconnected" : state.shared ? "dead" : "back";

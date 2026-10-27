@@ -32,6 +32,11 @@ namespace ArtifactOfParallel
 
         internal static void RaiseLocalVisibilityChanged(GameObject obj, bool visible)
         {
+            if (DebugLog.Enabled)
+            {
+                int handlers = LocalVisibilityChanged?.GetInvocationList().Length ?? 0;
+                DebugLog.Info($"ParallelApi: {(obj ? obj.name : "null")} visible={visible}, {handlers} listeners (MapChests subscribes once updated)");
+            }
             if (LocalVisibilityChanged == null)
             {
                 return;
