@@ -9,6 +9,7 @@ namespace ArtifactOfParallel
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     [BepInDependency("com.bepis.r2api.content_management")]
     [BepInDependency("com.bepis.r2api.language")]
+    [BepInDependency(RiskOfOptionsCompat.Guid, BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
     public class ArtifactOfParallelPlugin : BaseUnityPlugin
     {
@@ -27,6 +28,7 @@ namespace ArtifactOfParallel
             InteractionHooks.Init();
             LootAssigner.Init();
             OwnershipTracker.Init();
+            RiskOfOptionsCompat.TryInit();
         }
 
         private void FixedUpdate()

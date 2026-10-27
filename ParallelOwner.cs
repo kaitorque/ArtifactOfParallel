@@ -260,6 +260,27 @@ namespace ArtifactOfParallel
                     ping.RebuildPing();
                 }
             }
+            ParallelApi.RaiseLocalVisibilityChanged(gameObject, !hide);
+        }
+
+        // On clients, objects appear and disappear through the network when they're shared or returned. The ones
+        // present when the stage loads are found by other mods' own stage-start scans.
+        private static bool IsMidStage => Run.instance && Stage.instance && Stage.instance.entryTime.timeSince > 2f;
+
+        public override void OnStartClient()
+        {
+            if (!NetworkServer.active && IsMidStage)
+            {
+                ParallelApi.RaiseLocalVisibilityChanged(gameObject, true);
+            }
+        }
+
+        public override void OnNetworkDestroy()
+        {
+            if (!NetworkServer.active && IsMidStage)
+            {
+                ParallelApi.RaiseLocalVisibilityChanged(gameObject, false);
+            }
         }
 
         public bool IsLocallyHidden => locallyHidden;

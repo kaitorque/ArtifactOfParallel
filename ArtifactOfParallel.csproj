@@ -24,6 +24,7 @@
     <Reference Include="R2API.Core" HintPath="$(Profile)\plugins\RiskofThunder-R2API_Core\R2API.Core\R2API.Core.dll" Private="false" />
     <Reference Include="R2API.ContentManagement" HintPath="$(Profile)\plugins\RiskofThunder-R2API_ContentManagement\R2API.ContentManagement\R2API.ContentManagement.dll" Private="false" />
     <Reference Include="R2API.Language" HintPath="$(Profile)\plugins\RiskofThunder-R2API_Language\R2API.Language\R2API.Language.dll" Private="false" />
+    <Reference Include="RiskOfOptions" HintPath="$(Profile)\plugins\Rune580-Risk_Of_Options\RiskOfOptions\RiskOfOptions.dll" Private="false" />
     <Reference Include="RoR2" HintPath="$(GameManaged)\RoR2.dll" Private="false" />
     <Reference Include="HGCSharpUtils" HintPath="$(GameManaged)\HGCSharpUtils.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(GameManaged)\UnityEngine.PhysicsModule.dll" Private="false" />
