@@ -93,7 +93,7 @@ namespace ArtifactOfParallel
             int visibleRenderers = 0;
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
             {
-                if (renderer.enabled)
+                if (renderer.enabled && !renderer.forceRenderingOff)
                 {
                     visibleRenderers++;
                 }
@@ -171,15 +171,29 @@ namespace ArtifactOfParallel
             }
         }
 
+        private void LateUpdate()
+        {
+            if (!locallyHidden)
+            {
+                return;
+            }
+            // Other systems (Drifter's bag) also toggle forceRenderingOff, so keep it applied while hidden.
+            foreach (Renderer renderer in hiddenRenderers)
+            {
+                if (renderer && !renderer.forceRenderingOff)
+                {
+                    renderer.forceRenderingOff = true;
+                }
+            }
+        }
+
+        // Renderers are hidden with forceRenderingOff because DistanceLOD toggles Renderer.enabled on chests.
         private void Hide()
         {
-            foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+            foreach (Renderer renderer in GetComponentsInChildren<Renderer>(includeInactive: true))
             {
-                if (renderer.enabled)
-                {
-                    renderer.enabled = false;
-                    hiddenRenderers.Add(renderer);
-                }
+                renderer.forceRenderingOff = true;
+                hiddenRenderers.Add(renderer);
             }
             foreach (Collider collider in GetComponentsInChildren<Collider>())
             {
@@ -220,7 +234,7 @@ namespace ArtifactOfParallel
             {
                 if (renderer)
                 {
-                    renderer.enabled = true;
+                    renderer.forceRenderingOff = false;
                 }
             }
             foreach (Collider collider in hiddenColliders)

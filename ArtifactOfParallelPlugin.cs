@@ -25,6 +25,7 @@ namespace ArtifactOfParallel
             ParallelArtifact.Register();
             PrivatePrefabs.Init();
             InteractionHooks.Init();
+            LootAssigner.Init();
         }
     }
 }
