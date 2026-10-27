@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using RoR2;
 using RoR2.Hologram;
+using RoR2.UI;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -27,23 +28,34 @@ namespace ArtifactOfParallel
         private bool locallyHidden;
         private float rescanTimer;
 
+        private static readonly List<ParallelOwner> instances = new List<ParallelOwner>();
+
+        public static IReadOnlyList<ParallelOwner> Instances => instances;
+
         public bool IsPrivate => isPrivate;
 
+        public bool HasOwner => hasOwner;
+
+        public NetworkUserId OwnerId => ownerId;
+
         public NetworkInstanceId OwnerNetId => ownerNetId;
+
+        private void OnEnable()
+        {
+            instances.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            instances.Remove(this);
+        }
 
         /// <summary>Server only. Can be called before or after the object is network-spawned.</summary>
         public void SetOwner(NetworkUser owner)
         {
             hasOwner = owner;
             ownerId = owner ? owner.id : default;
-            isPrivate = hasOwner;
-            ownerNetId = owner ? owner.netId : NetworkInstanceId.Invalid;
-            if (isServer)
-            {
-                SetDirtyBit(OwnerDirtyBit);
-                GetComponent<NetworkIdentity>().RebuildObservers(initialize: false);
-            }
-            RefreshLocalVisibility();
+            ApplyState(hasOwner, owner ? owner.netId : NetworkInstanceId.Invalid);
 
             if (TryGetComponent(out MultiShopController multishop))
             {
@@ -58,6 +70,57 @@ namespace ArtifactOfParallel
             }
         }
 
+        /// <summary>
+        /// Server only. Makes an owned object shared (owner gone or dead) or private again, and follows the owner's
+        /// current <see cref="NetworkUser"/> after a reconnect. Opened objects are left as they are.
+        /// </summary>
+        public void ServerUpdateState(NetworkUser currentOwner, bool shared)
+        {
+            if (!hasOwner || IsUsed())
+            {
+                return;
+            }
+            bool newPrivate = !shared && currentOwner;
+            NetworkInstanceId newNetId = currentOwner ? currentOwner.netId : NetworkInstanceId.Invalid;
+            if (newPrivate != isPrivate || newNetId != ownerNetId)
+            {
+                ApplyState(newPrivate, newNetId);
+            }
+        }
+
+        private void ApplyState(bool newPrivate, NetworkInstanceId newOwnerNetId)
+        {
+            isPrivate = newPrivate;
+            ownerNetId = newOwnerNetId;
+            if (isServer)
+            {
+                SetDirtyBit(OwnerDirtyBit);
+                GetComponent<NetworkIdentity>().RebuildObservers(initialize: false);
+            }
+            RefreshLocalVisibility();
+        }
+
+        private bool IsUsed()
+        {
+            if (TryGetComponent(out PurchaseInteraction purchase))
+            {
+                return !purchase.available;
+            }
+            if (TryGetComponent(out MultiShopController multishop))
+            {
+                var terminals = multishop.terminalGameObjectsList;
+                for (int i = 0; i < terminals.Length; i++)
+                {
+                    if (terminals[i] && terminals[i].TryGetComponent(out PurchaseInteraction terminal) && terminal.available)
+                    {
+                        return false;
+                    }
+                }
+                return terminals.Length > 0;
+            }
+            return false;
+        }
+
         public bool IsOwnedBy(NetworkUser user)
         {
             if (!user)
@@ -69,14 +132,20 @@ namespace ArtifactOfParallel
 
         public bool CanBeUsedBy(Interactor activator)
         {
-            if (!isPrivate)
-            {
-                return true;
-            }
-            CharacterBody body = activator ? activator.GetComponent<CharacterBody>() : null;
+            return CanBeUsedBy(UserOf(activator ? activator.GetComponent<CharacterBody>() : null));
+        }
+
+        public bool CanBeUsedBy(NetworkUser user)
+        {
+            return !isPrivate || IsOwnedBy(user);
+        }
+
+        /// <summary>The player controlling this body, including their Remote Operation drone.</summary>
+        public static NetworkUser UserOf(CharacterBody body)
+        {
             CharacterMaster master = body ? body.master : null;
             PlayerCharacterMasterController player = master ? master.playerCharacterMasterController : null;
-            return player && IsOwnedBy(player.networkUser);
+            return player ? player.networkUser : null;
         }
 
         public bool IsVisibleToLocalPlayer()
@@ -184,7 +253,16 @@ namespace ArtifactOfParallel
             {
                 Show();
             }
+            foreach (PingIndicator ping in PingIndicator.instancesList.ToArray())
+            {
+                if (ping && ping.pingTarget && ping.pingTarget.GetComponentInParent<ParallelOwner>() == this)
+                {
+                    ping.RebuildPing();
+                }
+            }
         }
+
+        public bool IsLocallyHidden => locallyHidden;
 
         private void LateUpdate()
         {
@@ -199,12 +277,32 @@ namespace ArtifactOfParallel
                 rescanTimer = RescanInterval;
                 Hide();
             }
-            // Other systems (Drifter's bag) also toggle forceRenderingOff, so keep it applied while hidden.
+            // Drifter's grab and throw (SpecialObjectAttributes) switch renderers, colliders and behaviours like the
+            // price hologram back on, so keep everything hidden applied every frame.
             foreach (Renderer renderer in hiddenRenderers)
             {
                 if (renderer && !renderer.forceRenderingOff)
                 {
                     renderer.forceRenderingOff = true;
+                }
+            }
+            foreach (Collider collider in hiddenColliders)
+            {
+                if (collider && collider.enabled)
+                {
+                    collider.enabled = false;
+                }
+            }
+            foreach (Behaviour behaviour in hiddenBehaviours)
+            {
+                if (behaviour && behaviour.enabled)
+                {
+                    behaviour.enabled = false;
+                    if (behaviour is HologramProjector projector && projector.hologramContentInstance)
+                    {
+                        Destroy(projector.hologramContentInstance);
+                        projector.hologramContentInstance = null;
+                    }
                 }
             }
         }

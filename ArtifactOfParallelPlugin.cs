@@ -26,6 +26,12 @@ namespace ArtifactOfParallel
             PrivatePrefabs.Init();
             InteractionHooks.Init();
             LootAssigner.Init();
+            OwnershipTracker.Init();
+        }
+
+        private void FixedUpdate()
+        {
+            OwnershipTracker.FixedUpdate();
         }
     }
 }
