@@ -3,6 +3,7 @@
 ## 0.1.1
 
 - Fixed: on the host, a chest, lunar pod or lockbox that went back to its owner (after they revived or took over a Remote Operation drone) stayed visible to others but couldn't be opened. Their models live outside the object and weren't hidden again.
+- Debug logging: each stage lists everything the director spawned by type (shared and private, also with the artifact off for comparison), and which objects each player received or were removed.
 
 ## 0.1.0
 

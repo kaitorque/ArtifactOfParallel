@@ -27,6 +27,8 @@ namespace ArtifactOfParallel
 
         private static readonly List<Spawned> privateObjects = new List<Spawned>();
         private static readonly Dictionary<string, List<GameObject>> itemBoxes = new Dictionary<string, List<GameObject>>();
+        private static readonly SortedDictionary<string, (int count, int value)> sharedCounts = new SortedDictionary<string, (int count, int value)>();
+        private static readonly SortedDictionary<string, (int count, int value)> privateCounts = new SortedDictionary<string, (int count, int value)>();
         private static int sharedValue;
         private static bool populating;
 
@@ -42,17 +44,28 @@ namespace ArtifactOfParallel
         {
             privateObjects.Clear();
             itemBoxes.Clear();
+            sharedCounts.Clear();
+            privateCounts.Clear();
             sharedValue = 0;
             populating = true;
         }
 
         private static void OnSpawnInteractable(SceneDirector director, GameObject obj, DirectorCard card)
         {
-            if (!ParallelArtifact.Enabled || !obj || card == null)
+            if (!obj || card == null)
             {
                 return;
             }
-            if (PrivatePrefabs.IsPrivate(card.GetSpawnCard()) && obj.GetComponent<ParallelOwner>())
+            bool isPrivate = PrivatePrefabs.IsPrivate(card.GetSpawnCard()) && obj.GetComponent<ParallelOwner>();
+            if (DebugLog.Enabled)
+            {
+                CountSpawn(isPrivate && ParallelArtifact.Enabled ? privateCounts : sharedCounts, card);
+            }
+            if (!ParallelArtifact.Enabled)
+            {
+                return;
+            }
+            if (isPrivate)
             {
                 privateObjects.Add(new Spawned { obj = obj, value = card.cost });
             }
@@ -84,6 +97,7 @@ namespace ArtifactOfParallel
             populating = false;
             List<Spawned> objects = privateObjects.Where(spawned => spawned.obj).ToList();
             privateObjects.Clear();
+            LogSpawnCounts();
             if (!ParallelArtifact.Enabled)
             {
                 return;
@@ -129,6 +143,12 @@ namespace ArtifactOfParallel
             objects = objects.OrderByDescending(spawned => spawned.value).ToList();
             int removedValue = 0;
             int removedCount = 0;
+            var received = new List<string>[players.Count];
+            for (int i = 0; i < received.Length; i++)
+            {
+                received[i] = new List<string>();
+            }
+            var removedNames = new List<string>();
             foreach (Spawned spawned in objects)
             {
                 int lowest = 0;
@@ -144,20 +164,22 @@ namespace ArtifactOfParallel
                     spawned.obj.GetComponent<ParallelOwner>().SetOwner(players[lowest]);
                     assigned[lowest] += spawned.value;
                     counts[lowest]++;
+                    received[lowest].Add(ShortName(spawned));
                 }
                 else
                 {
                     removedValue += spawned.value;
                     removedCount++;
+                    removedNames.Add(ShortName(spawned));
                     NetworkServer.Destroy(spawned.obj);
                 }
             }
 
             for (int i = 0; i < players.Count; i++)
             {
-                log.Append($"\n  {players[i].userName}: value={assigned[i]} objects={counts[i]}");
+                log.Append($"\n  {players[i].userName}: value={assigned[i]} objects={counts[i]} [{string.Join(", ", received[i])}]");
             }
-            log.Append($"\n  removed: value={removedValue} objects={removedCount}");
+            log.Append($"\n  removed: value={removedValue} objects={removedCount} [{string.Join(", ", removedNames)}]");
             AssignItemBoxes(log);
             Log(log);
         }
@@ -268,6 +290,40 @@ namespace ArtifactOfParallel
             {
                 int j = rng.RangeInt(0, i + 1);
                 (list[i], list[j]) = (list[j], list[i]);
+            }
+        }
+
+        private static string ShortName(Spawned spawned) => $"{spawned.obj.name.Replace("(Clone)", "")} {spawned.value}";
+
+        private static void CountSpawn(SortedDictionary<string, (int count, int value)> counts, DirectorCard card)
+        {
+            SpawnCard spawnCard = card.GetSpawnCard();
+            string name = spawnCard ? spawnCard.name : "unknown";
+            counts.TryGetValue(name, out (int count, int value) entry);
+            counts[name] = (entry.count + 1, entry.value + card.cost);
+        }
+
+        /// <summary>What the vanilla director spawned this stage, before any split. Compare with the artifact off.</summary>
+        private static void LogSpawnCounts()
+        {
+            if (!DebugLog.Enabled)
+            {
+                return;
+            }
+            var log = new StringBuilder();
+            log.Append($"Director spawns on {SceneCatalog.mostRecentSceneDef?.cachedName} (artifact {(ParallelArtifact.Enabled ? "on" : "off")}, " +
+                $"{NetworkUser.readOnlyInstancesList.Count(user => user && user.master)} players, before the split):");
+            AppendCounts(log, "shared", sharedCounts);
+            AppendCounts(log, "private", privateCounts);
+            DebugLog.Info(log.ToString());
+        }
+
+        private static void AppendCounts(StringBuilder log, string label, SortedDictionary<string, (int count, int value)> counts)
+        {
+            log.Append($"\n  {label}: {counts.Values.Sum(entry => entry.count)} objects, value {counts.Values.Sum(entry => entry.value)}");
+            foreach (KeyValuePair<string, (int count, int value)> pair in counts)
+            {
+                log.Append($"\n    {pair.Key} x{pair.Value.count} (value {pair.Value.value})");
             }
         }
 
