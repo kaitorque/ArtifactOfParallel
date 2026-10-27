@@ -9,6 +9,12 @@ namespace ArtifactOfParallel
     internal enum PrivateType
     {
         Chest,
+        EquipmentBarrel,
+        LunarPod,
+        VoidCradle,
+        ShrineOfChance,
+        Multishop,
+        ItemBox,
     }
 
     /// <summary>
@@ -31,9 +37,24 @@ namespace ArtifactOfParallel
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Damage.asset", PrivateType.Chest),
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Healing.asset", PrivateType.Chest),
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Utility.asset", PrivateType.Chest),
+            ("RoR2/Base/EquipmentBarrel/iscEquipmentBarrel.asset", PrivateType.EquipmentBarrel),
+            ("RoR2/Base/LunarChest/iscLunarChest.asset", PrivateType.LunarPod),
+            ("RoR2/DLC1/VoidChest/iscVoidChest.asset", PrivateType.VoidCradle),
+            ("RoR2/DLC1/VoidChest/iscVoidChestSacrificeOn.asset", PrivateType.VoidCradle),
+            ("RoR2/DLC1/VoidTriple/iscVoidTriple.asset", PrivateType.VoidCradle),
+            ("RoR2/Base/ShrineChance/iscShrineChance.asset", PrivateType.ShrineOfChance),
+            ("RoR2/Base/ShrineChance/iscShrineChanceSandy.asset", PrivateType.ShrineOfChance),
+            ("RoR2/Base/ShrineChance/iscShrineChanceSnowy.asset", PrivateType.ShrineOfChance),
+            ("RoR2/Base/TripleShop/iscTripleShop.asset", PrivateType.Multishop),
+            ("RoR2/Base/TripleShopLarge/iscTripleShopLarge.asset", PrivateType.Multishop),
+            ("RoR2/Base/TripleShopEquipment/iscTripleShopEquipment.asset", PrivateType.Multishop),
+            ("RoR2/Junk/TreasureCache/iscLockbox.asset", PrivateType.ItemBox),
+            ("RoR2/DLC1/TreasureCacheVoid/iscLockboxVoid.asset", PrivateType.ItemBox),
+            ("RoR2/DLC1/FreeChest/iscFreeChest.asset", PrivateType.ItemBox),
         };
 
         private static readonly Dictionary<SpawnCard, PrivateType> typeByCard = new Dictionary<SpawnCard, PrivateType>();
+        private static readonly Dictionary<string, InteractableSpawnCard> cardByNameToken = new Dictionary<string, InteractableSpawnCard>();
 
         public static void Init()
         {
@@ -45,11 +66,25 @@ namespace ArtifactOfParallel
                     ArtifactOfParallelPlugin.Log.LogError($"Spawn card {key} not found.");
                     continue;
                 }
-                if (!card.prefab.GetComponent<ParallelOwner>())
+                AddOwner(card.prefab);
+                if (card.prefab.TryGetComponent(out MultiShopController multishop) && multishop.terminalPrefab)
                 {
-                    card.prefab.AddComponent<ParallelOwner>();
+                    AddOwner(multishop.terminalPrefab);
                 }
                 typeByCard[card] = type;
+                if (type != PrivateType.ItemBox && card.prefab.TryGetComponent(out PurchaseInteraction purchase)
+                    && !string.IsNullOrEmpty(purchase.displayNameToken) && !cardByNameToken.ContainsKey(purchase.displayNameToken))
+                {
+                    cardByNameToken[purchase.displayNameToken] = card;
+                }
+            }
+        }
+
+        private static void AddOwner(GameObject prefab)
+        {
+            if (!prefab.GetComponent<ParallelOwner>())
+            {
+                prefab.AddComponent<ParallelOwner>();
             }
         }
 
@@ -64,11 +99,35 @@ namespace ArtifactOfParallel
             return card && typeByCard.TryGetValue(card, out PrivateType type) && IsEnabled(type);
         }
 
+        public static bool IsItemBox(SpawnCard card)
+        {
+            return card && typeByCard.TryGetValue(card, out PrivateType type) && type == PrivateType.ItemBox;
+        }
+
+        /// <summary>
+        /// Matches a stage-placed object to the private spawn card it's a copy of, by its display name.
+        /// </summary>
+        public static InteractableSpawnCard FindCardForSceneObject(PurchaseInteraction purchase)
+        {
+            if (purchase && !string.IsNullOrEmpty(purchase.displayNameToken)
+                && cardByNameToken.TryGetValue(purchase.displayNameToken, out InteractableSpawnCard card) && IsPrivate(card))
+            {
+                return card;
+            }
+            return null;
+        }
+
         private static bool IsEnabled(PrivateType type)
         {
             ConfigEntry<bool> entry = type switch
             {
                 PrivateType.Chest => ModConfig.PrivateChests,
+                PrivateType.EquipmentBarrel => ModConfig.PrivateEquipmentBarrels,
+                PrivateType.LunarPod => ModConfig.PrivateLunarPods,
+                PrivateType.VoidCradle => ModConfig.PrivateVoidCradles,
+                PrivateType.ShrineOfChance => ModConfig.PrivateShrineOfChance,
+                PrivateType.Multishop => ModConfig.PrivateMultishops,
+                PrivateType.ItemBox => ModConfig.PrivateItemBoxes,
                 _ => null,
             };
             return entry != null && entry.Value;

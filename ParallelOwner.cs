@@ -19,10 +19,13 @@ namespace ArtifactOfParallel
         private NetworkInstanceId ownerNetId = NetworkInstanceId.Invalid;
         private bool isPrivate;
 
-        private readonly List<Behaviour> hiddenBehaviours = new List<Behaviour>();
-        private readonly List<Renderer> hiddenRenderers = new List<Renderer>();
-        private readonly List<Collider> hiddenColliders = new List<Collider>();
+        private const float RescanInterval = 0.25f;
+
+        private readonly HashSet<Behaviour> hiddenBehaviours = new HashSet<Behaviour>();
+        private readonly HashSet<Renderer> hiddenRenderers = new HashSet<Renderer>();
+        private readonly HashSet<Collider> hiddenColliders = new HashSet<Collider>();
         private bool locallyHidden;
+        private float rescanTimer;
 
         public bool IsPrivate => isPrivate;
 
@@ -41,6 +44,18 @@ namespace ArtifactOfParallel
                 GetComponent<NetworkIdentity>().RebuildObservers(initialize: false);
             }
             RefreshLocalVisibility();
+
+            if (TryGetComponent(out MultiShopController multishop))
+            {
+                var terminals = multishop.terminalGameObjectsList;
+                for (int i = 0; i < terminals.Length; i++)
+                {
+                    if (terminals[i] && terminals[i].TryGetComponent(out ParallelOwner terminalOwner))
+                    {
+                        terminalOwner.SetOwner(owner);
+                    }
+                }
+            }
         }
 
         public bool IsOwnedBy(NetworkUser user)
@@ -177,6 +192,13 @@ namespace ArtifactOfParallel
             {
                 return;
             }
+            // Pickup displays, effects and lights get added after spawn, so look for new ones while hidden.
+            rescanTimer -= Time.deltaTime;
+            if (rescanTimer <= 0f)
+            {
+                rescanTimer = RescanInterval;
+                Hide();
+            }
             // Other systems (Drifter's bag) also toggle forceRenderingOff, so keep it applied while hidden.
             foreach (Renderer renderer in hiddenRenderers)
             {
@@ -188,28 +210,37 @@ namespace ArtifactOfParallel
         }
 
         // Renderers are hidden with forceRenderingOff because DistanceLOD toggles Renderer.enabled on chests.
+        // Safe to call repeatedly; only components not hidden yet are touched.
         private void Hide()
         {
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(includeInactive: true))
             {
-                renderer.forceRenderingOff = true;
-                hiddenRenderers.Add(renderer);
+                if (hiddenRenderers.Add(renderer))
+                {
+                    renderer.forceRenderingOff = true;
+                }
             }
             foreach (Collider collider in GetComponentsInChildren<Collider>())
             {
-                if (collider.enabled)
+                if (collider.enabled && hiddenColliders.Add(collider))
                 {
                     collider.enabled = false;
-                    hiddenColliders.Add(collider);
+                }
+            }
+            foreach (Light light in GetComponentsInChildren<Light>())
+            {
+                if (light.enabled)
+                {
+                    hiddenBehaviours.Add(light);
+                    light.enabled = false;
                 }
             }
             foreach (Highlight highlight in GetComponentsInChildren<Highlight>())
             {
                 highlight.isOn = false;
-                if (highlight.enabled)
+                if (highlight.enabled && hiddenBehaviours.Add(highlight))
                 {
                     highlight.enabled = false;
-                    hiddenBehaviours.Add(highlight);
                 }
             }
             // The price hologram is built on demand for whichever player is nearest, so it has to be stopped too.
@@ -220,10 +251,9 @@ namespace ArtifactOfParallel
                     Destroy(projector.hologramContentInstance);
                     projector.hologramContentInstance = null;
                 }
-                if (projector.enabled)
+                if (projector.enabled && hiddenBehaviours.Add(projector))
                 {
                     projector.enabled = false;
-                    hiddenBehaviours.Add(projector);
                 }
             }
         }

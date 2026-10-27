@@ -19,20 +19,31 @@ namespace ArtifactOfParallel
             public int value;
         }
 
+        private struct Fixed
+        {
+            public GameObject obj;
+            public InteractableSpawnCard card;
+        }
+
         private static readonly List<Spawned> privateObjects = new List<Spawned>();
+        private static readonly Dictionary<string, List<GameObject>> itemBoxes = new Dictionary<string, List<GameObject>>();
         private static int sharedValue;
+        private static bool populating;
 
         public static void Init()
         {
             SceneDirector.onPrePopulateSceneServer += OnPrePopulate;
             SceneDirector.onSpawnInteractableServer += OnSpawnInteractable;
             SceneDirector.onPostPopulateSceneServer += OnPostPopulate;
+            On.RoR2.DirectorCore.TrySpawnObject += DirectorCore_TrySpawnObject;
         }
 
         private static void OnPrePopulate(SceneDirector director)
         {
             privateObjects.Clear();
+            itemBoxes.Clear();
             sharedValue = 0;
+            populating = true;
         }
 
         private static void OnSpawnInteractable(SceneDirector director, GameObject obj, DirectorCard card)
@@ -51,35 +62,73 @@ namespace ArtifactOfParallel
             }
         }
 
+        // Item boxes are spawned straight through DirectorCore, one per item holder, in holder order. Failed spawns
+        // are kept as null so box k still lines up with holder k.
+        private static GameObject DirectorCore_TrySpawnObject(On.RoR2.DirectorCore.orig_TrySpawnObject orig, DirectorCore self, DirectorSpawnRequest request)
+        {
+            GameObject result = orig(self, request);
+            if (populating && request != null && PrivatePrefabs.IsItemBox(request.spawnCard))
+            {
+                string name = request.spawnCard.name;
+                if (!itemBoxes.TryGetValue(name, out List<GameObject> list))
+                {
+                    itemBoxes[name] = list = new List<GameObject>();
+                }
+                list.Add(result);
+            }
+            return result;
+        }
+
         private static void OnPostPopulate(SceneDirector director)
         {
+            populating = false;
+            List<Spawned> objects = privateObjects.Where(spawned => spawned.obj).ToList();
+            privateObjects.Clear();
             if (!ParallelArtifact.Enabled)
             {
-                privateObjects.Clear();
                 return;
             }
 
             List<NetworkUser> players = NetworkUser.readOnlyInstancesList.Where(user => user && user.master).ToList();
-            List<Spawned> objects = privateObjects.Where(spawned => spawned.obj).ToList();
             int privateValue = objects.Sum(spawned => spawned.value);
-            privateObjects.Clear();
+            var log = new StringBuilder();
+            log.Append($"Stage {SceneCatalog.mostRecentSceneDef?.cachedName}: players={players.Count} shared={sharedValue} private={privateValue}");
             if (players.Count <= 1)
             {
-                Log(players.Count, privateValue, privateValue, null, null, null, 0, 0);
+                Log(log.Append(" (not split: fewer than 2 players)"));
                 return;
             }
 
             var rng = new Xoroshiro128Plus(Run.instance.seed ^ (ulong)(Run.instance.stageClearCount + 1) * 0x9E3779B97F4A7C15UL);
             Shuffle(players, rng);
-            Shuffle(objects, rng);
-            objects = objects.OrderByDescending(spawned => spawned.value).ToList();
 
-            float target = (float)privateValue / players.Count;
+            List<Fixed> fixedObjects = FindFixedObjects();
+            int fixedValue = fixedObjects.Sum(item => item.card.directorCreditCost);
+            float target = (float)(privateValue + fixedValue) / players.Count;
+            bool copyFixed = fixedObjects.Count > 0 && fixedValue <= target;
+            if (!copyFixed)
+            {
+                target = (float)privateValue / players.Count;
+            }
+            log.Append($" fixed={fixedValue} ({fixedObjects.Count} objects, {(fixedObjects.Count == 0 ? "none" : copyFixed ? "copied" : "shared")})");
+            log.Append($" target={target:0.#}");
+
             int[] assigned = new int[players.Count];
             int[] counts = new int[players.Count];
+            if (copyFixed)
+            {
+                CopyFixedObjects(fixedObjects, players);
+                for (int i = 0; i < players.Count; i++)
+                {
+                    assigned[i] = fixedValue;
+                    counts[i] = fixedObjects.Count;
+                }
+            }
+
+            Shuffle(objects, rng);
+            objects = objects.OrderByDescending(spawned => spawned.value).ToList();
             int removedValue = 0;
             int removedCount = 0;
-
             foreach (Spawned spawned in objects)
             {
                 int lowest = 0;
@@ -104,7 +153,112 @@ namespace ArtifactOfParallel
                 }
             }
 
-            Log(players.Count, privateValue, target, players, assigned, counts, removedValue, removedCount);
+            for (int i = 0; i < players.Count; i++)
+            {
+                log.Append($"\n  {players[i].userName}: value={assigned[i]} objects={counts[i]}");
+            }            log.Append($"\n  removed: value={removedValue} objects={removedCount}");
+            AssignItemBoxes(log);
+            Log(log);
+        }
+
+        /// <summary>Active, unopened stage-placed objects of a private type.</summary>
+        private static List<Fixed> FindFixedObjects()
+        {
+            var result = new List<Fixed>();
+            foreach (PurchaseInteraction purchase in Object.FindObjectsOfType<PurchaseInteraction>())
+            {
+                if (!purchase.available || purchase.GetComponent<ParallelOwner>())
+                {
+                    continue;
+                }
+                NetworkIdentity identity = purchase.GetComponent<NetworkIdentity>();
+                if (!identity || identity.sceneId.IsEmpty())
+                {
+                    continue;
+                }
+                InteractableSpawnCard card = PrivatePrefabs.FindCardForSceneObject(purchase);
+                if (card)
+                {
+                    result.Add(new Fixed { obj = purchase.gameObject, card = card });
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Scene objects can't carry <see cref="ParallelOwner"/>, so each one is replaced by one spawned copy per player.
+        /// </summary>
+        private static void CopyFixedObjects(List<Fixed> fixedObjects, List<NetworkUser> players)
+        {
+            foreach (Fixed item in fixedObjects)
+            {
+                Transform original = item.obj.transform;
+                foreach (NetworkUser player in players)
+                {
+                    GameObject copy = Object.Instantiate(item.card.prefab, original.position, original.rotation);
+                    if (copy.TryGetComponent(out PurchaseInteraction purchase) && purchase.costType == CostTypeIndex.Money)
+                    {
+                        purchase.Networkcost = Run.instance.GetDifficultyScaledCost(purchase.cost);
+                    }
+                    copy.GetComponent<ParallelOwner>().SetOwner(player);
+                    NetworkServer.Spawn(copy);
+                }
+                NetworkIdentity identity = item.obj.GetComponent<NetworkIdentity>();
+                if (identity && !identity.netId.IsEmpty())
+                {
+                    NetworkServer.Destroy(item.obj);
+                }
+                else
+                {
+                    Object.Destroy(item.obj);
+                }
+            }
+        }
+
+        private static void AssignItemBoxes(StringBuilder log)
+        {
+            if (!ModConfig.PrivateItemBoxes.Value)
+            {
+                return;
+            }
+            AssignItemBoxes(log, "iscLockbox", RoR2Content.Items.TreasureCache);
+            AssignItemBoxes(log, "iscLockboxVoid", DLC1Content.Items.TreasureCacheVoid);
+            AssignItemBoxes(log, "iscFreeChest", DLC1Content.Items.FreeChest);
+        }
+
+        private static void AssignItemBoxes(StringBuilder log, string cardName, ItemDef item)
+        {
+            if (!item || !itemBoxes.TryGetValue(cardName, out List<GameObject> boxes))
+            {
+                return;
+            }
+            List<CharacterMaster> holders = CharacterMaster.readOnlyInstancesList
+                .Where(master => master.inventory && master.inventory.GetItemCountEffective(item) > 0)
+                .ToList();
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                GameObject box = boxes[i];
+                if (!box || !box.TryGetComponent(out ParallelOwner owner))
+                {
+                    continue;
+                }
+                NetworkUser user = i < holders.Count ? PlayerFor(holders[i]) : null;
+                if (user)
+                {
+                    owner.SetOwner(user);
+                }
+                log.Append($"\n  {cardName}: {(user ? user.userName : "shared")}");
+            }
+        }
+
+        private static NetworkUser PlayerFor(CharacterMaster master)
+        {
+            if (master.playerCharacterMasterController)
+            {
+                return master.playerCharacterMasterController.networkUser;
+            }
+            CharacterMaster leader = master.minionOwnership ? master.minionOwnership.ownerMaster : null;
+            return leader && leader.playerCharacterMasterController ? leader.playerCharacterMasterController.networkUser : null;
         }
 
         private static void Shuffle<T>(List<T> list, Xoroshiro128Plus rng)
@@ -116,29 +270,12 @@ namespace ArtifactOfParallel
             }
         }
 
-        private static void Log(int playerCount, int privateValue, float target, List<NetworkUser> players,
-            int[] assigned, int[] counts, int removedValue, int removedCount)
+        private static void Log(StringBuilder text)
         {
-            if (!ModConfig.LogSpawns.Value)
+            if (ModConfig.LogSpawns.Value)
             {
-                return;
+                ArtifactOfParallelPlugin.Log.LogInfo(text.ToString());
             }
-            var text = new StringBuilder();
-            text.Append($"Stage {SceneCatalog.mostRecentSceneDef?.cachedName}: players={playerCount} ");
-            text.Append($"shared={sharedValue} private={privateValue} total={sharedValue + privateValue} target={target:0.#}");
-            if (players != null)
-            {
-                for (int i = 0; i < players.Count; i++)
-                {
-                    text.Append($"\n  {players[i].userName}: value={assigned[i]} objects={counts[i]}");
-                }
-                text.Append($"\n  removed: value={removedValue} objects={removedCount}");
-            }
-            else
-            {
-                text.Append(" (not split: fewer than 2 players)");
-            }
-            ArtifactOfParallelPlugin.Log.LogInfo(text.ToString());
         }
     }
 }

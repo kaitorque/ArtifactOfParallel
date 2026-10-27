@@ -10,6 +10,7 @@ namespace ArtifactOfParallel
         public static ConfigEntry<bool> PrivateVoidCradles { get; private set; }
         public static ConfigEntry<bool> PrivateShrineOfChance { get; private set; }
         public static ConfigEntry<bool> PrivateMultishops { get; private set; }
+        public static ConfigEntry<bool> PrivateItemBoxes { get; private set; }
         public static ConfigEntry<bool> PrivatePrinters { get; private set; }
         public static ConfigEntry<bool> PrivateScrappers { get; private set; }
         public static ConfigEntry<bool> PrivateDrones { get; private set; }
@@ -29,6 +30,8 @@ namespace ArtifactOfParallel
                 "Shrines of Chance are split between players.");
             PrivateMultishops = config.Bind("Private", "Multishops", true,
                 "Multishop terminals are split between players.");
+            PrivateItemBoxes = config.Bind("Private", "ItemBoxes", true,
+                "Rusted Key lockboxes, Encrusted Key caches and Shipping Request Form chests belong to the player whose item spawned them.");
             PrivatePrinters = config.Bind("Private", "Printers", false,
                 "3D printers are split between players.");
             PrivateScrappers = config.Bind("Private", "Scrappers", false,
