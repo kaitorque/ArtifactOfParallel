@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Fixed: on the host, a chest, lunar pod or lockbox that went back to its owner (after they revived or took over a Remote Operation drone) stayed visible to others but couldn't be opened. Their models live outside the object and weren't hidden again.
+
 ## 0.1.0
 
 First test version.

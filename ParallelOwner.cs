@@ -180,7 +180,7 @@ namespace ArtifactOfParallel
         {
             string ownerName = OwnerName();
             int visibleRenderers = 0;
-            foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+            foreach (Renderer renderer in Parts<Renderer>())
             {
                 if (renderer.enabled && !renderer.forceRenderingOff)
                 {
@@ -346,12 +346,36 @@ namespace ArtifactOfParallel
             }
         }
 
+        /// <summary>
+        /// Components on this object and on its model, which ModelLocator detaches from the hierarchy on Start for
+        /// chests, lunar pods and lockboxes.
+        /// </summary>
+        private T[] Parts<T>(bool includeInactive = false) where T : Component
+        {
+            T[] own = GetComponentsInChildren<T>(includeInactive);
+            ModelLocator locator = GetComponent<ModelLocator>();
+            Transform model = locator ? locator.modelTransform : null;
+            if (!model || model.IsChildOf(transform))
+            {
+                return own;
+            }
+            T[] detached = model.GetComponentsInChildren<T>(includeInactive);
+            if (detached.Length == 0)
+            {
+                return own;
+            }
+            var all = new T[own.Length + detached.Length];
+            own.CopyTo(all, 0);
+            detached.CopyTo(all, own.Length);
+            return all;
+        }
+
         // Renderers are hidden with forceRenderingOff because DistanceLOD toggles Renderer.enabled on chests.
         // Safe to call repeatedly; only components not hidden yet are touched.
         private void Hide()
         {
             int renderers = 0, colliders = 0, lights = 0, holograms = 0;
-            foreach (Renderer renderer in GetComponentsInChildren<Renderer>(includeInactive: true))
+            foreach (Renderer renderer in Parts<Renderer>(includeInactive: true))
             {
                 if (hiddenRenderers.Add(renderer))
                 {
@@ -359,7 +383,7 @@ namespace ArtifactOfParallel
                     renderers++;
                 }
             }
-            foreach (Collider collider in GetComponentsInChildren<Collider>())
+            foreach (Collider collider in Parts<Collider>())
             {
                 if (collider.enabled && hiddenColliders.Add(collider))
                 {
@@ -367,7 +391,7 @@ namespace ArtifactOfParallel
                     colliders++;
                 }
             }
-            foreach (Light light in GetComponentsInChildren<Light>())
+            foreach (Light light in Parts<Light>())
             {
                 if (light.enabled)
                 {
@@ -376,7 +400,7 @@ namespace ArtifactOfParallel
                     lights++;
                 }
             }
-            foreach (Highlight highlight in GetComponentsInChildren<Highlight>())
+            foreach (Highlight highlight in Parts<Highlight>())
             {
                 highlight.isOn = false;
                 if (highlight.enabled && hiddenBehaviours.Add(highlight))
@@ -385,7 +409,7 @@ namespace ArtifactOfParallel
                 }
             }
             // The price hologram is built on demand for whichever player is nearest, so it has to be stopped too.
-            foreach (HologramProjector projector in GetComponentsInChildren<HologramProjector>())
+            foreach (HologramProjector projector in Parts<HologramProjector>())
             {
                 if (projector.hologramContentInstance)
                 {

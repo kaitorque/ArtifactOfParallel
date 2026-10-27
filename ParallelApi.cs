@@ -35,7 +35,7 @@ namespace ArtifactOfParallel
             if (DebugLog.Enabled)
             {
                 int handlers = LocalVisibilityChanged?.GetInvocationList().Length ?? 0;
-                DebugLog.Info($"ParallelApi: {(obj ? obj.name : "null")} visible={visible}, {handlers} listeners (MapChests subscribes once updated)");
+                DebugLog.Info($"ParallelApi: {(obj ? obj.name : "null")} visible={visible}, {handlers} listeners");
             }
             if (LocalVisibilityChanged == null)
             {
