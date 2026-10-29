@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ArtifactOfParallel
 {
     /// <summary>
-    /// For other mods (e.g. MapChests) that highlight or map interactables. Reference this mod softly and check
+    /// For other mods that highlight or map interactables. Reference this mod softly and check
     /// <c>Chainloader.PluginInfos.ContainsKey("kaitorque.ArtifactOfParallel")</c> before calling.
     /// </summary>
     public static class ParallelApi

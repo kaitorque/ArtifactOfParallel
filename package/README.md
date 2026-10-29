@@ -34,7 +34,7 @@ The host's settings apply, read at the start of each stage. With [Risk Of Option
 
 > **Other artifacts and loot mods:** Parallel has only been tested on its own and with Artifact of Potential. Other artifacts or mods that change chests, shrines or shops, or how a stage spawns them (for example Sacrifice, Command, Delusion, or mods that add their own chests), haven't been tested with it. They may break the split: objects staying shared, a player getting too much or too little, or someone seeing another player's object. If you hit a problem, try without them first, and report it with your log.
 
-- **MapChests:** highlights and minimap icons only show your own private objects. Other highlight or minimap mods may still show other players' objects on the host; mods can use `ArtifactOfParallel.ParallelApi` to check visibility.
+- **Highlight and minimap mods** may show other players' private objects on the host. Mod authors can use `ArtifactOfParallel.ParallelApi` to check what the local player can see.
 - Players joining mid-stage (DropinMultiplayer) get a share from the next stage.
 - **TorqueFixes** (optional, host only) fixes two base-game bugs found while testing this mod: a host hang with Heretic on a Remote Operation drone, and constant lag from Gorag's Opus with Gesture of the Drowned or on an Equipment Drone.
 

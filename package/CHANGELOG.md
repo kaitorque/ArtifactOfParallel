@@ -30,5 +30,5 @@ First test version.
 - Remote Operation drones can open their player's own objects; Drifter can't grab or Tinker other players' objects.
 - On the host, other players' objects are fully hidden (models, lights, price labels, ping outlines).
 - Per-category config, with an optional Risk Of Options page.
-- `ParallelApi` for other mods (MapChests) to check what the local player can see.
+- `ParallelApi` for other mods (highlight or minimap mods) to check what the local player can see.
 - Debug logging and the `parallel_test_chests` / `parallel_debug` console commands.
