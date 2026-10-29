@@ -4,3 +4,4 @@ obj/
 package/*.dll
 package/LICENSE
 .serena/
+DESIGN.md
