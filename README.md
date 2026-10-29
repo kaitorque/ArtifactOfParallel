@@ -38,7 +38,6 @@ The host's settings apply, read at the start of each stage. With [Risk Of Option
 
 - **Highlight and minimap mods** may show other players' private objects on the host. Mod authors can use `ArtifactOfParallel.ParallelApi` to check what the local player can see.
 - Players joining mid-stage (DropinMultiplayer) get a share from the next stage.
-- **TorqueFixes** (optional, host only) fixes two base-game bugs found while testing this mod: a host hang with Heretic on a Remote Operation drone, and constant lag from Gorag's Opus with Gesture of the Drowned or on an Equipment Drone.
 
 ## Known issues
 

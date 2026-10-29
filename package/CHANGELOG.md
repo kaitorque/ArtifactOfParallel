@@ -6,7 +6,7 @@ First full release.
 
 - Fixed: adaptive chests are actually private now. 0.1.2 used a wrong asset key, so they stayed shared.
 - README: added a compatibility note that other artifacts and loot mods haven't been tested with Parallel and may break the split.
-- The Heretic + Remote Operation fix moved to a separate host-side mod, TorqueFixes, along with a Gorag's Opus lag fix. This mod no longer changes base-game behaviour outside the artifact.
+- Removed the base-game Heretic + Remote Operation fix added in 0.1.2. This mod no longer changes base-game behaviour outside the artifact.
 
 ## 0.1.2
 
