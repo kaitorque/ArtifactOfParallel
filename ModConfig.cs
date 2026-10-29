@@ -16,7 +16,7 @@ namespace ArtifactOfParallel
         public static void Init(ConfigFile config)
         {
             PrivateChests = config.Bind("Private", "Chests", true,
-                "Small, large, legendary and category chests are split between players.");
+                "Small, large, legendary, category and adaptive chests are split between players.");
             PrivateEquipmentBarrels = config.Bind("Private", "EquipmentBarrels", true,
                 "Equipment barrels are split between players.");
             PrivateLunarPods = config.Bind("Private", "LunarPods", true,

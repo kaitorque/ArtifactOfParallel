@@ -9,6 +9,7 @@ if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
 $package = Join-Path $dir "package"
 Copy-Item (Join-Path $dir "bin\Release\netstandard2.1\$name.dll") $package -Force
+Copy-Item (Join-Path $dir "LICENSE") $package -Force
 
 if ($Install) {
     $target = Join-Path $env:APPDATA "r2modmanPlus-local\RiskOfRain2\profiles\VP\BepInEx\plugins\Kaitorque-$name"

@@ -2,7 +2,7 @@
 
 An artifact that splits a stage's chests, Shrines of Chance, multishops and similar loot between players. Each player only sees and opens their own; anything that drops out is shared. Added together, everyone's share is about what the stage would have in a normal multiplayer run.
 
-Everyone in the lobby needs this mod, with the same version. **Early version (0.1): expect rough edges.**
+Everyone in the lobby needs this mod, with the same version.
 
 ## How it works
 
@@ -21,7 +21,7 @@ The host's settings apply, read at the start of each stage. With [Risk Of Option
 
 | Section | Setting | Default | Description |
 |---|---|---|---|
-| Private | Chests, EquipmentBarrels, LunarPods, VoidCradles, ShrineOfChance, Multishops | true | Which interactables are split between players |
+| Private | Chests, EquipmentBarrels, LunarPods, VoidCradles, ShrineOfChance, Multishops | true | Which interactables are split between players. Chests covers small, large, legendary, category and adaptive chests. |
 | Private | ItemBoxes | true | Item-spawned boxes belong to the item's holder |
 | Debug | Logging | false | Log the loot split, ownership changes and interaction checks |
 
@@ -32,8 +32,11 @@ The host's settings apply, read at the start of each stage. With [Risk Of Option
 
 ## Compatibility
 
-- **MapChests:** until MapChests is updated for this mod, the host sees highlights and minimap icons for other players' objects. Mods can use `ArtifactOfParallel.ParallelApi` to check visibility.
+> **Other artifacts and loot mods:** Parallel has only been tested on its own and with Artifact of Potential. Other artifacts or mods that change chests, shrines or shops, or how a stage spawns them (for example Sacrifice, Command, Delusion, or mods that add their own chests), haven't been tested with it. They may break the split: objects staying shared, a player getting too much or too little, or someone seeing another player's object. If you hit a problem, try without them first, and report it with your log.
+
+- **MapChests:** highlights and minimap icons only show your own private objects. Other highlight or minimap mods may still show other players' objects on the host; mods can use `ArtifactOfParallel.ParallelApi` to check visibility.
 - Players joining mid-stage (DropinMultiplayer) get a share from the next stage.
+- **TorqueFixes** (optional, host only) fixes two base-game bugs found while testing this mod: a host hang with Heretic on a Remote Operation drone, and constant lag from Gorag's Opus with Gesture of the Drowned or on an Equipment Drone.
 
 ## Known issues
 

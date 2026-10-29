@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0
+
+First full release.
+
+- Fixed: adaptive chests are actually private now. 0.1.2 used a wrong asset key, so they stayed shared.
+- README: added a compatibility note that other artifacts and loot mods haven't been tested with Parallel and may break the split.
+- The Heretic + Remote Operation fix moved to a separate host-side mod, TorqueFixes, along with a Gorag's Opus lag fix. This mod no longer changes base-game behaviour outside the artifact.
+
+## 0.1.2
+
+- Adaptive chests are now private (under the Chests setting); they were missing from the list and stayed shared.
+- Fixed a base-game hang: a player with all four Heretic items (e.g. joining as Heretic with DropinMultiplayer) on a Remote Operation drone doubled a list on their character with every item picked up, until the host froze and crashed.
+
 ## 0.1.1
 
 - Fixed: on the host, a chest, lunar pod or lockbox that went back to its owner (after they revived or took over a Remote Operation drone) stayed visible to others but couldn't be opened. Their models live outside the object and weren't hidden again.

@@ -1,7 +1,7 @@
 {
-    "version_number":  "0.1.1",
+    "version_number":  "1.0.0",
     "name":  "ArtifactOfParallel",
-    "website_url":  "",
+    "website_url":  "https://github.com/kaitorque/ArtifactOfParallel",
     "description":  "Artifact that splits chests, shrines and shops between players. Each player only sees their own; total loot stays vanilla.",
     "dependencies":  [
                          "bbepis-BepInExPack-5.4.2121",

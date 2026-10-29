@@ -37,6 +37,7 @@ namespace ArtifactOfParallel
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Damage.asset", PrivateType.Chest),
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Healing.asset", PrivateType.Chest),
             ("RoR2/DLC1/CategoryChest2/iscCategoryChest2Utility.asset", PrivateType.Chest),
+            ("RoR2/Base/CasinoChest/iscCasinoChest.asset", PrivateType.Chest),
             ("RoR2/Base/EquipmentBarrel/iscEquipmentBarrel.asset", PrivateType.EquipmentBarrel),
             ("RoR2/Base/LunarChest/iscLunarChest.asset", PrivateType.LunarPod),
             ("RoR2/DLC1/VoidChest/iscVoidChest.asset", PrivateType.VoidCradle),
