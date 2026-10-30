@@ -53,10 +53,6 @@ namespace ArtifactOfParallel
                     position = hit.point;
                 }
                 GameObject chest = Object.Instantiate(card.prefab, position, rotation);
-                if (chest.TryGetComponent(out PurchaseInteraction purchase) && purchase.costType == CostTypeIndex.Money)
-                {
-                    purchase.Networkcost = Run.instance.GetDifficultyScaledCost(purchase.cost);
-                }
                 chest.GetComponent<ParallelOwner>().SetOwner(user);
                 NetworkServer.Spawn(chest);
                 count++;

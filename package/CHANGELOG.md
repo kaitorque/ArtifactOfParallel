@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Fixed: on clients, a stage-placed chest that was copied per player (like the Large Chest on top of the ruins in Verdant Falls) left its original model behind. Clients saw an extra closed chest that nobody could open.
+- Fixed: those per-player copies cost more than vanilla because the difficulty scaling was applied twice.
+
 ## 1.0.0
 
 First full release.

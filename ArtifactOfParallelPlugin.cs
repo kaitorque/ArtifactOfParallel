@@ -15,7 +15,7 @@ namespace ArtifactOfParallel
     {
         public const string PluginGuid = "kaitorque.ArtifactOfParallel";
         public const string PluginName = "ArtifactOfParallel";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         internal static ManualLogSource Log { get; private set; }
 
@@ -27,6 +27,7 @@ namespace ArtifactOfParallel
             ParallelArtifact.Register();
             PrivatePrefabs.Init();
             InteractionHooks.Init();
+            SceneModelCleanup.Init();
             LootAssigner.Init();
             OwnershipTracker.Init();
             RiskOfOptionsCompat.TryInit();

@@ -118,6 +118,14 @@ namespace ArtifactOfParallel
             return null;
         }
 
+        /// <summary>
+        /// True if this is one of the types the host may split, whatever this game's own config says.
+        /// </summary>
+        public static bool IsPrivateType(PurchaseInteraction purchase)
+        {
+            return purchase && !string.IsNullOrEmpty(purchase.displayNameToken) && cardByNameToken.ContainsKey(purchase.displayNameToken);
+        }
+
         private static bool IsEnabled(PrivateType type)
         {
             ConfigEntry<bool> entry = type switch

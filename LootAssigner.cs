@@ -219,10 +219,6 @@ namespace ArtifactOfParallel
                 foreach (NetworkUser player in players)
                 {
                     GameObject copy = Object.Instantiate(item.card.prefab, original.position, original.rotation);
-                    if (copy.TryGetComponent(out PurchaseInteraction purchase) && purchase.costType == CostTypeIndex.Money)
-                    {
-                        purchase.Networkcost = Run.instance.GetDifficultyScaledCost(purchase.cost);
-                    }
                     copy.GetComponent<ParallelOwner>().SetOwner(player);
                     NetworkServer.Spawn(copy);
                 }
